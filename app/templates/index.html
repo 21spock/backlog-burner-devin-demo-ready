@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Backlog Burner</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Technical take-home starter app</p>
+          <h1>Backlog Burner</h1>
+          <p class="subhead">Import stale GitHub issues, triage them into a safe autonomous lane, launch Devin on the best candidates, and track progress for engineering leadership.</p>
+          <div class="status-row">
+            <span id="health-status" class="badge empty">checking config…</span>
+            <span class="helper">Live launch requires <code>DEVIN_API_KEY</code>. Demo launch works without it.</span>
+          </div>
+        </div>
+        <div class="actions">
+          <button onclick="importDemoData()">Import 6 demo-ready issues</button>
+          <button onclick="runTriage()">Run triage</button>
+          <button class="secondary" onclick="launchLive()">Launch live Devin sessions</button>
+          <button onclick="launchDryRun()">Launch demo Devin sessions</button>
+          <button class="secondary" onclick="syncRuns()">Sync runs</button>
+        </div>
+      </header>
+
+      <section class="metrics">
+        <div class="metric-card"><span>Issues imported</span><strong id="issues_imported">{{ metrics.issues_imported }}</strong></div>
+        <div class="metric-card"><span>Safe autonomous</span><strong id="safe_autonomous">{{ metrics.safe_autonomous }}</strong></div>
+        <div class="metric-card"><span>Needs clarification</span><strong id="needs_clarification">{{ metrics.needs_clarification }}</strong></div>
+        <div class="metric-card"><span>Senior review</span><strong id="senior_review">{{ metrics.senior_review }}</strong></div>
+        <div class="metric-card"><span>Active runs</span><strong id="active_runs">{{ metrics.active_runs }}</strong></div>
+        <div class="metric-card"><span>PRs opened</span><strong id="prs_opened">{{ metrics.prs_opened }}</strong></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Demo script issue set</h2>
+            <p>These six intentional issues are designed to tell the exact client story: two are safe for Devin, two require clarification, and two should stay with senior engineers.</p>
+          </div>
+          <div class="mini-legend">
+            <span class="badge safe_autonomous">2 safe for Devin</span>
+            <span class="badge needs_clarification">2 need clarification</span>
+            <span class="badge senior_review">2 senior review</span>
+          </div>
+        </div>
+        <div class="tags scenario-tags">
+          <span class="tag">#201 Disable broken live-launch path</span>
+          <span class="tag">#202 Add triage filter chips</span>
+          <span class="tag">#203 Improve import reliability</span>
+          <span class="tag">#204 Better progress notifications</span>
+          <span class="tag">#205 Role-based approvals</span>
+          <span class="tag">#206 Multi-repo enterprise routing</span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Issue backlog</h2>
+          <p>Green issues are your safe autonomous lane. Yellow ones need product or repro detail. Red ones stay with senior engineers.</p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Select</th>
+              <th>Issue</th>
+              <th>Age</th>
+              <th>Labels</th>
+              <th>Decision</th>
+              <th>Confidence</th>
+              <th>Reasoning</th>
+            </tr>
+          </thead>
+          <tbody id="issues-body">
+            {% for issue in issues %}
+            <tr>
+              <td><input type="checkbox" class="issue-check" value="{{ issue.id }}" /></td>
+              <td>
+                <div class="issue-title">#{{ issue.github_issue_number }} {{ issue.title }}</div>
+                <a href="{{ issue.url }}" target="_blank">Open issue</a>
+              </td>
+              <td>{{ issue.age_days }}d</td>
+              <td>
+                <div class="tags">
+                  {% for label in issue.labels %}<span class="tag">{{ label }}</span>{% endfor %}
+                </div>
+              </td>
+              <td>{% if issue.decision %}<span class="badge {{ issue.decision }}">{{ issue.decision }}</span>{% else %}<span class="badge empty">not triaged</span>{% endif %}</td>
+              <td>{{ issue.confidence or '-' }}</td>
+              <td class="reason">{{ issue.reasoning_summary or '-' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Devin runs</h2>
+          <p>This is your client-facing proof that work is moving, not just being categorized.</p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Mode</th>
+              <th>Session</th>
+              <th>Issue</th>
+              <th>Status</th>
+              <th>Insight</th>
+              <th>Error</th>
+              <th>PR</th>
+            </tr>
+          </thead>
+          <tbody id="runs-body">
+            {% for run in runs %}
+            <tr>
+              <td><span class="badge {{ run.launch_mode }}">{{ run.launch_mode }}</span></td>
+              <td>{% if run.session_url %}<a href="{{ run.session_url }}" target="_blank">{{ run.devin_session_id or 'pending' }}</a>{% else %}{{ run.devin_session_id or 'pending' }}{% endif %}</td>
+              <td>#{{ run.github_issue_number }} {{ run.issue_title }}</td>
+              <td><span class="badge {{ run.status }}">{{ run.status }}</span></td>
+              <td class="reason">{{ run.last_insight_summary or '-' }}</td>
+              <td class="reason">{{ run.last_error or '-' }}</td>
+              <td>{% if run.pr_url %}<a href="{{ run.pr_url }}" target="_blank">PR</a>{% else %}-{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+
+      <section class="panel notes">
+        <h2>Suggested Loom framing</h2>
+        <ol>
+          <li>Import the six intentional issues and explain that they represent a noisy stale backlog.</li>
+          <li>Run triage and call out the three buckets: safe for Devin, needs clarification, and senior review.</li>
+          <li>Select only the two green issues to show human approval before launch.</li>
+          <li>Launch live or demo Devin sessions, then sync runs to show progress, PRs, and blockers.</li>
+        </ol>
+      </section>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
