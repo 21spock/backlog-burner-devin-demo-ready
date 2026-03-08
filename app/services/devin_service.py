@@ -29,6 +29,13 @@ class DevinService:
         org_part = "/{0}".format(self.settings.devin_org_id) if self.settings.devin_org_id else ""
         return "{0}{1}{2}".format(self.base_url, org_part, suffix)
 
+    @staticmethod
+    def _devin_id(session_id: str) -> str:
+        """Ensure session_id carries the 'devin-' prefix required by the v3 API."""
+        if session_id.startswith("devin-"):
+            return session_id
+        return "devin-{0}".format(session_id)
+
     def _raise_for_status(self, response: httpx.Response) -> None:
         if response.is_success:
             return
@@ -54,7 +61,7 @@ class DevinService:
 
     def get_session_insights(self, session_id: str) -> Dict[str, Any]:
         with httpx.Client(timeout=30.0) as client:
-            response = client.get(self._build_url("/sessions/{0}/insights".format(session_id)), headers=self._headers())
+            response = client.get(self._build_url("/sessions/{0}/insights".format(self._devin_id(session_id))), headers=self._headers())
             self._raise_for_status(response)
             return response.json()
 
